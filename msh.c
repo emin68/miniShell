@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 
 
@@ -12,7 +13,7 @@
 // Stocke les pointeurs dans **cmds
 // Retourne aussi le nombre de mots dans *nb_cmds
 // cmds[i] pointe directement dans 'ligne' (modifié par strtok_r)
-static void recup_commande(char *ligne, char ***cmds, int *nb_cmds) {
+static void recup_commande(char *ligne, char ***cmds, int *nb_cmds){
     size_t cap = 8;  // capacité initiale
     int n = 0;       // nombre de mots trouvés
     char **tab = malloc(cap * sizeof(char *));
@@ -38,9 +39,13 @@ static void recup_commande(char *ligne, char ***cmds, int *nb_cmds) {
 }
 
 
-int main(void) {
+int main(void){
     char *line = NULL; // Buffer pour stocker la ligne lue
     size_t buf_len=0;    // Capacité du buffer
+    struct sigaction sa = {0};
+    sa.sa_handler = SIG_IGN;              // parent ignore Ctrl-C
+    sigaction(SIGINT, &sa, NULL);
+
 
     while (1) {
         // 1. Afficher le prompt
@@ -49,7 +54,7 @@ int main(void) {
 
         // 2. Lire une ligne avec getline()
         ssize_t nread = getline(&line, &buf_len, stdin);
-        if (nread == -1) {
+        if (nread == -1){
             // EOF (Ctrl-D) ou erreur de lecture
             if (feof(stdin)) break;      // sortie propre si Ctrl-D
             perror("getline");           // sinon affiche l'erreur
@@ -58,7 +63,7 @@ int main(void) {
 
 
         // 3. Enlever le \n final
-        if (nread > 0 && line[nread - 1] == '\n') {
+        if (nread > 0 && line[nread - 1] == '\n'){
             line[nread - 1] = '\0';
         }
         
@@ -66,18 +71,39 @@ int main(void) {
         char **cmds = NULL;
         int nb_cmds = 0;
         recup_commande(line, &cmds, &nb_cmds);
-        
 
-        //si "exit" on quitte le shell
-        if (strcmp(cmds[0], "exit") == 0) {
-            free(cmds);
-            break; // quitte le shell
-        }
-
-        
         if (nb_cmds == 0){ 
             free(cmds);
             continue; // ligne vide
+        }
+        
+        //si "exit" on quitte le shell
+        if (strcmp(cmds[0], "exit") == 0){
+            free(cmds);
+            break; // quitte le shell
+        }
+        //commande cd
+        if (strcmp(cmds[0], "cd") == 0){
+            if (nb_cmds < 2) {
+                fprintf(stderr, "cd: chemin manquant\n");
+            } else {
+                if (chdir(cmds[1]) != 0){ //on change le chemin actuel en celui de l'argument
+                    perror("cd");
+                }
+            }
+            free(cmds);
+            continue; // on ne fork pas, on repart au prompt
+        }
+        //pwd chemin courant
+        if (strcmp(cmds[0], "pwd") == 0) {
+            char buf[4096];
+            if (getcwd(buf, sizeof buf)) {
+                puts(buf);
+            } else {
+                perror("pwd");
+            }
+            free(cmds);
+            continue;
         }
 
         //initialise un processus
@@ -89,12 +115,14 @@ int main(void) {
         }
 
         if (pid == 0){
+            signal(SIGINT, SIG_DFL);// l'enfant retrouve le comportement normal
             // Enfant : exécute la commande
             execvp(cmds[0], cmds);
             // Si on arrive ici, exec a échoué
             perror("execvp");
             _exit(127);
-        } else {
+        }
+        else{
             // Parent : attendre l’enfant pour éviter les zombies
             int status = 0;
             if (waitpid(pid, &status, 0) < 0) {
