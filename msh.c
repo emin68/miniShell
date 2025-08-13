@@ -1,10 +1,43 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <string.h>
+
+
+// Découpe 'ligne' en mots séparés par espace/tab
+// Stocke les pointeurs dans **cmds
+// Retourne aussi le nombre de mots dans *nb_cmds
+// cmds[i] pointe directement dans 'ligne' (modifié par strtok_r)
+static void recup_commande(char *ligne, char ***cmds, int *nb_cmds) {
+    size_t cap = 8;  // capacité initiale
+    int n = 0;       // nombre de mots trouvés
+    char **tab = malloc(cap * sizeof(char *));
+    if (!tab) { perror("malloc"); exit(1); }
+
+    char *pos;  // pointeur de progression
+    char *mot = strtok_r(ligne, " \t", &pos);
+
+    while (mot) {
+        if (n + 1 >= (int)cap) { // +1 pour le NULL final
+            cap *= 2;
+            char **tmp = realloc(tab, cap * sizeof(char *));
+            if (!tmp) { free(tab); perror("realloc"); exit(1); }
+            tab = tmp;
+        }
+        tab[n++] = mot;
+        mot = strtok_r(NULL, " \t", &pos);
+    }
+    tab[n] = NULL; // pour execvp
+
+    *cmds = tab;
+    *nb_cmds = n;
+}
+
 
 int main(void) {
     char *line = NULL; // Buffer pour stocker la ligne lue
-    size_t buf_len = 0;    // Capacité du buffer
+    size_t buf_len=0;    // Capacité du buffer
 
     while (1) {
         // 1. Afficher le prompt
@@ -25,9 +58,19 @@ int main(void) {
         if (nread > 0 && line[nread - 1] == '\n') {
             line[nread - 1] = '\0';
         }
+        
+        //tokenisation
+        char **argv = NULL;
+        int argc = 0;
+        recup_commande(line, &argv, &argc);
+        
+        // DEBUG : afficher ce qu’on a récupéré
+        printf("Nb mots : %d\n", argc);
+        for (int i = 0; i < argc; i++) {
+            printf("cmds[%d] = '%s'\n", i, argv[i]);
+        }
 
-        // 4) Réafficher ce qu’on a lu (test)
-        printf(">> %s\n", line);
+        free(argv);
 
     }
 
