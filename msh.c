@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <limits.h>
 
 
 
@@ -45,6 +46,7 @@ int main(void){
     struct sigaction sa = {0};
     sa.sa_handler = SIG_IGN;              // parent ignore Ctrl-C
     sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGQUIT, &sa, NULL);
 
 
     while (1) {
@@ -100,16 +102,13 @@ int main(void){
             continue; // on ne fork pas, on repart au prompt
         }
         //pwd chemin courant
-        if (strcmp(cmds[0], "pwd") == 0) {
-            char buf[4096];
-            if (getcwd(buf, sizeof buf)) {
-                puts(buf);
-            } else {
-                perror("pwd");
-            }
-            free(cmds);
-            continue;
+        char cwd[PATH_MAX];
+        if (getcwd(cwd, sizeof cwd)) {
+            printf("msh:%s> ", cwd);
+        } else {
+            printf("msh> ");
         }
+        fflush(stdout);
 
         //initialise un processus
         pid_t pid = fork(); 
@@ -121,6 +120,7 @@ int main(void){
 
         if (pid == 0){
             signal(SIGINT, SIG_DFL);// l'enfant retrouve le comportement normal
+            signal(SIGQUIT, SIG_DFL);
             // Enfant : exécute la commande
             execvp(cmds[0], cmds);
             // Si on arrive ici, exec a échoué
