@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
 
 
 // Découpe 'ligne' en mots séparés par espace/tab
@@ -60,17 +63,46 @@ int main(void) {
         }
         
         //tokenisation
-        char **argv = NULL;
-        int argc = 0;
-        recup_commande(line, &argv, &argc);
+        char **cmds = NULL;
+        int nb_cmds = 0;
+        recup_commande(line, &cmds, &nb_cmds);
         
-        // DEBUG : afficher ce qu’on a récupéré
-        printf("Nb mots : %d\n", argc);
-        for (int i = 0; i < argc; i++) {
-            printf("cmds[%d] = '%s'\n", i, argv[i]);
+
+        //si "exit" on quitte le shell
+        if (strcmp(cmds[0], "exit") == 0) {
+            free(cmds);
+            break; // quitte le shell
         }
 
-        free(argv);
+        
+        if (nb_cmds == 0){ 
+            free(cmds);
+            continue; // ligne vide
+        }
+
+        //initialise un processus
+        pid_t pid = fork(); 
+        if (pid < 0){
+            perror("fork");
+            free(cmds);
+            continue;
+        }
+
+        if (pid == 0){
+            // Enfant : exécute la commande
+            execvp(cmds[0], cmds);
+            // Si on arrive ici, exec a échoué
+            perror("execvp");
+            _exit(127);
+        } else {
+            // Parent : attendre l’enfant pour éviter les zombies
+            int status = 0;
+            if (waitpid(pid, &status, 0) < 0) {
+                perror("waitpid");
+            }
+        }
+
+        free(cmds);
 
     }
 
