@@ -84,12 +84,17 @@ int main(void){
         }
         //commande cd
         if (strcmp(cmds[0], "cd") == 0){
-            if (nb_cmds < 2) {
-                fprintf(stderr, "cd: chemin manquant\n");
-            } else {
-                if (chdir(cmds[1]) != 0){ //on change le chemin actuel en celui de l'argument
-                    perror("cd");
-                }
+            const char *dest = NULL;
+            if (nb_cmds < 2){
+                dest = getenv("HOME");  // cd → HOME
+                if (!dest) dest = "/";  // fallback
+            }
+            else{
+                dest = cmds[1];
+            }
+
+            if (chdir(dest) != 0){
+                perror("cd");
             }
             free(cmds);
             continue; // on ne fork pas, on repart au prompt
