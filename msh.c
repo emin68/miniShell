@@ -7,7 +7,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <limits.h>
-
+#include <fcntl.h>
 
 
 // Découpe 'ligne' en mots séparés par espace/tab
@@ -110,6 +110,32 @@ int main(void){
         }
         fflush(stdout);
 
+        // — redirection de sortie ">"
+        char *outfile = NULL;   // nom du fichier après '>'
+
+        // on compacte cmds[] "sur place" : on enlève '>' et le fichier
+        int w = 0;              // index d'écriture
+        for (int i = 0; i < nb_cmds; i++) {
+            if (strcmp(cmds[i], ">") == 0) {
+                if (i + 1 >= nb_cmds) {
+                    fprintf(stderr, "syntax error: expected file after '>'\n");
+                    nb_cmds = 0;           // invalide la commande
+                    break;
+                }
+                outfile = cmds[i + 1];     // on retient le fichier
+                i++;                       // on saute aussi le nom de fichier
+                continue;                  // on NE garde PAS '>' ni le fichier dans cmds
+            }
+            cmds[w++] = cmds[i];           // sinon on garde l’argument
+        }
+        cmds[w] = NULL;
+        nb_cmds = w;
+
+        if (nb_cmds == 0) {                // ex: ">" tout seul → rien à exécuter
+            free(cmds);
+            continue;
+        }
+
         //initialise un processus
         pid_t pid = fork(); 
         if (pid < 0){
@@ -122,6 +148,16 @@ int main(void){
             signal(SIGINT, SIG_DFL);// l'enfant retrouve le comportement normal
             signal(SIGQUIT, SIG_DFL);
             // Enfant : exécute la commande
+            if (outfile) {
+                int fd = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+                if (fd < 0) { perror("open >"); _exit(126); }
+
+                if (dup2(fd, STDOUT_FILENO) < 0) { // remplace stdout (1) par le fichier
+                    perror("dup2 >");
+                    _exit(126);
+                }
+                close(fd); // on peut fermer: stdout pointe déjà vers fd
+            }
             execvp(cmds[0], cmds);
             // Si on arrive ici, exec a échoué
             perror("execvp");
