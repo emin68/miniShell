@@ -7,31 +7,31 @@ Petit shell en C, lit une ligne, la découpe en arguments, gère quelques built-
 
 FONCTIONNALITES
 
-Prompt avec chemin courant (msh:/chemin/actuel> )
+- Prompt avec chemin courant (msh:/chemin/actuel> )
 
-Exécution de commandes externes
+- Exécution de commandes externes
 
-Built-ins :
+- Built-ins :
 
-exit — quitter le shell
+ -- exit — quitter le shell
 
-cd <dir> — changer de dossier
+ -- cd <dir> — changer de dossier
 
-cd - — revenir au dossier précédent
+ -- cd - — revenir au dossier précédent
 
-Redirections :
+- Redirections :
 
-cmd > f.txt — écrase/écrit dans un fichier
+ -- cmd > f.txt — écrase/écrit dans un fichier
 
-cmd >> f.txt — ajoute à la fin d’un fichier
+ -- cmd >> f.txt — ajoute à la fin d’un fichier
 
-cmd < f.txt — lit l’entrée depuis un fichier
+ -- cmd < f.txt — lit l’entrée depuis un fichier
 
-Gestion des signaux :
+- Gestion des signaux :
 
-Le shell ignore Ctrl-C/Ctrl-\ (parent)
+- Le shell ignore Ctrl-C/Ctrl-\ (parent)
 
-Les commandes, elles, reprennent le comportement normal
+- Les commandes, elles, reprennent le comportement normal
 
 
 
@@ -52,11 +52,17 @@ make run
 EXEMPLES : 
 
 ls -l
+
 echo "hello" > out.txt
+
 echo "again" >> out.txt
+
 cat < out.txt
+
 cd /tmp
+
 cd -
+
 exit
 
 
