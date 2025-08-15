@@ -50,9 +50,15 @@ int main(void){
 
 
     while (1) {
-        // 1. Afficher le prompt
-        printf("msh> ");
-        fflush(stdout); // Force l’affichage immédiat
+        
+        //pwd chemin courant
+        char cwd[PATH_MAX];
+        if (getcwd(cwd, sizeof cwd)) {
+            printf("msh:%s> ", cwd);
+        } else {
+            printf("msh> ");
+        }
+        fflush(stdout);
 
         // 2. Lire une ligne avec getline()
         ssize_t nread = getline(&line, &buf_len, stdin);
@@ -101,14 +107,7 @@ int main(void){
             free(cmds);
             continue; // on ne fork pas, on repart au prompt
         }
-        //pwd chemin courant
-        char cwd[PATH_MAX];
-        if (getcwd(cwd, sizeof cwd)) {
-            printf("msh:%s> ", cwd);
-        } else {
-            printf("msh> ");
-        }
-        fflush(stdout);
+        
 
         // — redirection de sortie ">"
         char *outfile = NULL;   // nom du fichier après '>'
