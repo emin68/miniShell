@@ -37,14 +37,14 @@ FONCTIONNALITES
 
 COMPILATION
 
-Avec gcc : 
-gcc -std=c17 -Wall -Wextra -O2 -o msh msh.c
+- Avec gcc : 
+- gcc -std=c17 -Wall -Wextra -O2 -o msh msh.c
 
-Utilisation : 
+- Utilisation : 
 ./msh
 
 
-Avec le Makefile :
+- Avec le Makefile :
 make run
 
 
