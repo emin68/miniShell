@@ -5,7 +5,7 @@ Petit shell en C, lit une ligne, la découpe en arguments, gère quelques built-
 
 
 
-Fonctionnalités
+FONCTIONNALITES
 
 Prompt avec chemin courant (msh:/chemin/actuel> )
 
@@ -35,7 +35,7 @@ Les commandes, elles, reprennent le comportement normal
 
 
 
-Compilation
+COMPILATION
 
 Avec gcc : 
 gcc -std=c17 -Wall -Wextra -O2 -o msh msh.c
@@ -49,7 +49,7 @@ make run
 
 
 
-Exemples : 
+EXEMPLES : 
 
 ls -l
 echo "hello" > out.txt
