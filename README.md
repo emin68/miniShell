@@ -15,7 +15,7 @@ FONCTIONNALITES
 
  -- exit — quitter le shell
 
- -- cd <dir> — changer de dossier
+ -- cd <dir> pour changer de dossier
 
  -- cd - — revenir au dossier précédent
 
